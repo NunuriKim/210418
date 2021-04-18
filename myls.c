@@ -29,16 +29,12 @@ void exec_ls_l(DIR * dp, char *dir)
 	}
 }
 
-void exec_ls_i(DIR * dp, char *dir)
-{
-        struct dirent *entry = NULL;
+// void exec_ls_i(DIR * dp, char *dir)
+// {
+//         struct dirent *entry = NULL;
 
-        while((entry = readdir(dp)) != NULL)
-        {
-                printf("%d ", entry->d_ino);
-                printf("%s\n", entry->d_name);
-        }
-}
+
+// }
 
 void exec_ls_t(DIR * dp, char *dir)
 {
@@ -93,16 +89,52 @@ int main(int argc, char **argv) {
 		 dir = ".";
 	else if (argc == 2 && argv[1][0] == '-')
 		 dir = ".";
+	else if (argc >= 2 && strcmp(argv[1], "-i") == 0)
+	{
+		if ((dp = opendir(argv[2])) != NULL)
+		{
+			  while((entry = readdir(dp)) != NULL)
+				{
+						printf("%d ", entry->d_ino);
+						printf("%s\n", entry->d_name);
+				}
+			closedir(dp);
+		}
+		else{
+			for (int i=1; argv[i]; i++)
+			{
+				if (lstat(argv[i], &st) >= 0)
+				{
+					if (S_ISREG(st.st_mode))
+					{
+						printf("%d ", st.st_ino);
+						printf("%s\n", argv[i]);
+					}
+				}
+			}
+		}
+		return 0;
+	}
+	else if (argc >= 2 && argv[1][0] == '-')
+		 dir = argv[2];
 	else if (argc > 1 &&  argv[1][0] != '-' )
-		dir = argv[2];
+		dir = argv[1];
 
 	if ((dp = opendir(dir)) == NULL) // 디렉토리 열기
 	{
-		lstat(dir, &st);
-			if (S_ISREG(st.st_mode))
-				printf("%s\n", dir);
-			else
-				printf("디렉토리가 아니거나 존재하지 않습니다.\n");
+		for (int i=1; argv[i]; i++)
+		{
+			if (lstat(argv[i], &st) >= 0)
+			{
+				if (S_ISREG(st.st_mode))
+					printf("%s\n", argv[i]);
+				else
+					if (S_ISDIR(st.st_mode))
+						printf("\n%s\n", argv[i]);
+				else
+					printf("ls: %s: No such file or directory.\n", argv[i]);
+				}
+		}
 		return 0;
 	}
 	if (argc > 1)
@@ -116,12 +148,6 @@ int main(int argc, char **argv) {
 		else if (strcmp(argv[1], "-l") == 0)
 		{
 			exec_ls_l(dp, dir);
-			closedir(dp);
-			return 0;
-		}
-		else if (strcmp(argv[1], "-i") == 0)
-		{
-			exec_ls_i(dp, dir);
 			closedir(dp);
 			return 0;
 		}
